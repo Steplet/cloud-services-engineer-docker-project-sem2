@@ -1,0 +1,108 @@
+name: momo-store
+
+services:
+  # --- Backend ---
+  backend:
+    build:
+      context: ./backend
+    image: momo-backend:local
+    expose:
+      - "8081" 
+    networks:
+      - backend-net
+    secrets:
+      - app_secret
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=64M,mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8081/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - backend-logs:/app/logs
+
+  # --- Gateway ---
+  gateway:
+    build:
+      context: ./nginx
+    image: momo-gateway:local
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    networks:
+      - backend-net
+      - edge-net
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    tmpfs:
+      - /tmp:size=32M,mode=1777
+      - /var/cache/nginx:size=32M,uid=101,gid=101,mode=0755
+      - /var/run:size=16M,uid=101,gid=101,mode=0755
+      - /var/log/nginx:size=16M,uid=101,gid=101,mode=0755
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # --- Frontend ---
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VUE_APP_API_URL: http://localhost:8081
+    image: momo-frontend:local
+    depends_on:
+      gateway:
+        condition: service_healthy
+    ports:
+      - "80:8080"
+    networks:
+      - edge-net
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=32M,mode=1777
+      - /var/cache/nginx:size=32M,uid=101,gid=101,mode=0755
+      - /var/run:size=16M,uid=101,gid=101,mode=0755
+      - /var/log/nginx:size=16M,uid=101,gid=101,mode=0755
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  # внутренняя сеть
+  backend-net:
+    driver: bridge
+    internal: true
+  # сеть наружного контура
+  edge-net:
+    driver: bridge
+
+volumes:
+  backend-logs:
+
+secrets:
+  app_secret:
+    file: ./secrets/app_secret.txt.example

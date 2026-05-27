@@ -31,11 +31,13 @@ WORKDIR /app
 
 COPY --from=builder --chown=app:app /out/api ./api
 
+RUN mkdir -p /app/logs && chown -R app:app /app
+
 USER app
 
 EXPOSE 8081
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -q --spider http://127.0.0.1:8081/health || exit 1
+    CMD wget -q -O- http://127.0.0.1:8081/health >/dev/null 2>&1 || exit 1
 
 ENTRYPOINT ["./api"]
