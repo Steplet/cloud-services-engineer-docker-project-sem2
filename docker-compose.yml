@@ -85,7 +85,7 @@ services:
       - /var/run:size=16M,uid=101,gid=101,mode=0755
       - /var/log/nginx:size=16M,uid=101,gid=101,mode=0755
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/health"]
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8080/health"]
       interval: 30s
       timeout: 5s
       retries: 3
