@@ -1,13 +1,35 @@
 # Momo Store — Docker
 
+## Запуск (prod, по умолчанию)
 
-## Запуск
+Обычная команда поднимает **prod-стек**: `backend` + `gateway` + `frontend`.
 
 ```bash
 sudo docker compose up -d --build
 ```
 
-### Переопределение через переменные
+Открыть:
+- **Frontend**: `http://localhost/momo-store/` (порт 80)
+- **Backend (API через gateway)**: `http://localhost:8081` (порт 8081)
+
+## Dev (отдельный файл, без gateway)
+
+Перед dev останови prod, чтобы не было конфликта портов:
+
+```bash
+sudo docker compose down
+sudo docker compose -f docker-compose.dev.yml up -d --build
+```
+
+В dev поднимаются только `backend` (порт 8081) и `frontend` (порт 80).
+
+Остановка dev:
+
+```bash
+sudo docker compose -f docker-compose.dev.yml down
+```
+
+## Переопределение через переменные
 
 ```bash
 FRONTEND_PUBLISH_PORT=8088 \
@@ -16,19 +38,14 @@ VUE_APP_API_URL=http://localhost:18081 \
 sudo docker compose up -d --build
 ```
 
-### Dev-профиль (без gateway)
+Или через `.env`:
 
 ```bash
-sudo docker compose --profile dev up -d --build
+cp .env.example .env
+sudo docker compose up -d --build
 ```
 
-В dev профиле поднимутся `backend-dev` (порт 8081) и `frontend-dev` (порт 80) без reverse-proxy.
-
-Открыть:
-- **Frontend**: `http://localhost/momo-store/` (порт 80)
-- **Backend (API через gateway)**: `http://localhost:8081` (порт 8081)
-
-Проверки:
+## Проверки
 
 ```bash
 curl -i http://localhost/health
@@ -36,13 +53,7 @@ curl -i http://localhost:8081/health
 curl -i http://localhost:8081/products
 ```
 
-Остановка:
-
-```bash
-sudo docker compose down
-```
-
-## Порты и доступность
+## Порты и доступность (prod)
 
 - **frontend**: внутри контейнера `8080`, на хосте `80:8080`
 - **gateway**: на хосте `8081:8081`
@@ -50,19 +61,14 @@ sudo docker compose down
 
 ## Лимиты ресурсов
 
-В `docker-compose.yml` заданы лимиты CPU/RAM для сервисов 
+В compose-файлах заданы лимиты CPU/RAM для сервисов.
 
 ## Переменные / build args
 
-Фронтенд использует `VUE_APP_API_URL` как build-time переменную
-По умолчанию в `docker-compose.yml`: `${VUE_APP_API_URL:-http://localhost:8081}`.
-
-Можно создать файл `.env` рядом с `docker-compose.yml`:
-
-```bash
-cp .env.example .env
-```
+Фронтенд использует `VUE_APP_API_URL` как build-time переменную.
+По умолчанию: `${VUE_APP_API_URL:-http://localhost:8081}`.
 
 ## Секреты
 
 В compose подключён secret `app_secret` из файла `secrets/app_secret.txt.example`.
+Реальные секреты в git не коммитятся.

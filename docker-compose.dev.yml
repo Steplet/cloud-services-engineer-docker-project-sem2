@@ -1,17 +1,18 @@
 name: momo-store
 
-# Prod по умолчанию: backend + gateway + frontend
-# Запуск: docker compose up -d --build
+# Dev: backend и frontend напрямую, без gateway
+# Запуск: docker compose -f docker-compose.dev.yml up -d --build
+# Перед dev останови prod: docker compose down
 
 services:
   backend:
     build:
       context: ./backend
     image: ${IMAGE_PREFIX:-local}/momo-backend:${TAG:-local}
-    expose:
-      - "8081"
+    ports:
+      - "${API_PUBLISH_PORT:-8081}:8081"
     networks:
-      - backend-net
+      - edge-net
     secrets:
       - app_secret
     restart: unless-stopped
@@ -38,42 +39,6 @@ services:
     mem_limit: 256m
     cpus: 0.50
 
-  gateway:
-    build:
-      context: ./nginx
-    image: ${IMAGE_PREFIX:-local}/momo-gateway:${TAG:-local}
-    depends_on:
-      backend:
-        condition: service_healthy
-    ports:
-      - "${API_PUBLISH_PORT:-8081}:8081"
-    networks:
-      - backend-net
-      - edge-net
-    restart: unless-stopped
-    read_only: true
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
-    tmpfs:
-      - /tmp:size=32M,mode=1777
-      - /var/cache/nginx:size=32M,uid=101,gid=101,mode=0755
-      - /var/run:size=16M,uid=101,gid=101,mode=0755
-      - /var/log/nginx:size=16M,uid=101,gid=101,mode=0755
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    deploy:
-      resources:
-        limits:
-          cpus: "0.25"
-          memory: 128M
-    mem_limit: 128m
-    cpus: 0.25
-
   frontend:
     build:
       context: ./frontend
@@ -81,7 +46,7 @@ services:
         VUE_APP_API_URL: ${VUE_APP_API_URL:-http://localhost:8081}
     image: ${IMAGE_PREFIX:-local}/momo-frontend:${TAG:-local}
     depends_on:
-      gateway:
+      backend:
         condition: service_healthy
     ports:
       - "${FRONTEND_PUBLISH_PORT:-80}:8080"
@@ -113,9 +78,6 @@ services:
     cpus: 0.25
 
 networks:
-  backend-net:
-    driver: bridge
-    internal: true
   edge-net:
     driver: bridge
 
