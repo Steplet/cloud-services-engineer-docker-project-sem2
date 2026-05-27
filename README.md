@@ -7,6 +7,15 @@
 sudo docker compose up -d --build
 ```
 
+### Переопределение через переменные
+
+```bash
+FRONTEND_PUBLISH_PORT=8088 \
+API_PUBLISH_PORT=18081 \
+VUE_APP_API_URL=http://localhost:18081 \
+sudo docker compose up -d --build
+```
+
 ### Dev-профиль (без gateway)
 
 ```bash
@@ -46,7 +55,13 @@ sudo docker compose down
 ## Переменные / build args
 
 Фронтенд использует `VUE_APP_API_URL` как build-time переменную
-По умолчанию в `docker-compose.yml`: `http://localhost:8081`.
+По умолчанию в `docker-compose.yml`: `${VUE_APP_API_URL:-http://localhost:8081}`.
+
+Можно создать файл `.env` рядом с `docker-compose.yml`:
+
+```bash
+cp .env.example .env
+```
 
 ## Секреты
 

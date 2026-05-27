@@ -5,7 +5,7 @@ services:
   backend:
     build:
       context: ./backend
-    image: momo-backend:local
+    image: ${IMAGE_PREFIX:-local}/momo-backend:${TAG:-local}
     expose:
       - "8081" 
     networks:
@@ -40,12 +40,12 @@ services:
   gateway:
     build:
       context: ./nginx
-    image: momo-gateway:local
+    image: ${IMAGE_PREFIX:-local}/momo-gateway:${TAG:-local}
     depends_on:
       backend:
         condition: service_healthy
     ports:
-      - "8081:8081"
+      - "${API_PUBLISH_PORT:-8081}:8081"
     networks:
       - backend-net
       - edge-net
@@ -78,13 +78,13 @@ services:
     build:
       context: ./frontend
       args:
-        VUE_APP_API_URL: http://localhost:8081
-    image: momo-frontend:local
+        VUE_APP_API_URL: ${VUE_APP_API_URL:-http://localhost:8081}
+    image: ${IMAGE_PREFIX:-local}/momo-frontend:${TAG:-local}
     depends_on:
       gateway:
         condition: service_healthy
     ports:
-      - "80:8080"
+      - "${FRONTEND_PUBLISH_PORT:-80}:8080"
     networks:
       - edge-net
     restart: unless-stopped
@@ -117,14 +117,14 @@ services:
     build:
       context: ./frontend
       args:
-        VUE_APP_API_URL: http://localhost:8081
-    image: momo-frontend:local
+        VUE_APP_API_URL: ${VUE_APP_API_URL:-http://localhost:8081}
+    image: ${IMAGE_PREFIX:-local}/momo-frontend:${TAG:-local}
     profiles: ["dev"]
     depends_on:
       backend-dev:
         condition: service_healthy
     ports:
-      - "80:8080"
+      - "${FRONTEND_PUBLISH_PORT:-80}:8080"
     networks:
       - edge-net
     restart: unless-stopped
@@ -157,10 +157,10 @@ services:
   backend-dev:
     build:
       context: ./backend
-    image: momo-backend:local
+    image: ${IMAGE_PREFIX:-local}/momo-backend:${TAG:-local}
     profiles: ["dev"]
     ports:
-      - "8081:8081"
+      - "${API_PUBLISH_PORT:-8081}:8081"
     networks:
       - edge-net
     secrets:
