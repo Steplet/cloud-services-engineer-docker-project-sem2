@@ -32,14 +32,14 @@ jobs:
             push: true
             tags: ${{ secrets.DOCKER_USER }}/docker-project-frontend:latest
         - name: Scan backend image with Trivy
-          uses: aquasecurity/trivy-action@0.28.0
+          uses: aquasecurity/trivy-action@0.35.0
           with:
             image-ref: ${{ secrets.DOCKER_USER }}/docker-project-backend:latest
             format: table
             exit-code: 0
             severity: CRITICAL,HIGH
         - name: Scan frontend image with Trivy
-          uses: aquasecurity/trivy-action@0.28.0
+          uses: aquasecurity/trivy-action@0.35.0
           with:
             image-ref: ${{ secrets.DOCKER_USER }}/docker-project-frontend:latest
             format: table
